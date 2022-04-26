@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  vars:
+    test_skip: 'yes'
+  roles:
+    - role: ansible-role-basic-security

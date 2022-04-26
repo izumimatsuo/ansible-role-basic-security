@@ -1,0 +1,38 @@
+---
+# aide install
+
+- name: install aide package
+  yum:
+    name: aide
+
+- name: set aide custom include/exclude path
+  blockinfile:
+    dest: /etc/aide.conf
+    content: |
+
+      # ansible
+      !/root/\.ansible.*
+
+- name: copy cron script
+  copy:
+    dest: /etc/cron.daily/aide
+    content: |
+      #!/bin/bash
+
+      MAIL_TO="root"
+      MAIL_SUBJECT="AIDE detected warning"
+      MAIL_TEXT=`mktemp /tmp/temp.XXXXXX`
+
+      aide -C > $MAIL_TEXT
+
+      if [ $? -gt 0 ]; then
+        mail -s "$MAIL_SUBJECT" $MAIL_TO < $MAIL_TEXT
+      fi
+
+      rm -rf $MAIL_TEXT
+    mode: '0755'
+
+- name: init aide database
+  shell: aide --init; mv /var/lib/aide/aide.db{.new,}.gz
+  args:
+    creates: /var/lib/aide/aide.db.gz

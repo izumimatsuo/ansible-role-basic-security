@@ -1,0 +1,24 @@
+---
+# clamav install
+
+# - name: install epel repository
+#   yum:
+#     name: epel-release
+
+- name: install clamav packages
+  yum:
+    name:
+      - clamav
+      - clamav-update
+
+- name: set clamav database mirror
+  lineinfile:
+    path: /etc/freshclam.conf
+    insertbefore: '^DatabaseMirror\s+database.clamav.net'
+    line: 'DatabaseMirror db.jp.clamav.net'
+    backup: yes
+
+- name: init clamav database
+  command: freshclam
+  args:
+    creates: /var/lib/clamav/freshclam.dat

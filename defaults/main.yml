@@ -1,0 +1,14 @@
+---
+# defaults file for ansible-role-basic-security
+
+sec_unnecessary_services: ['postfix']
+
+sec_sshd_listen_port: 22
+sec_sshd_permit_root_login: no
+sec_sshd_password_authentication: no
+
+sec_aide_enabled: yes
+sec_clamav_enabled: yes
+sec_fail2ban_enabled: yes
+sec_firewalld_enabled: yes
+sec_rkhunter_enabled: yes

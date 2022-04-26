@@ -1,0 +1,43 @@
+---
+# rkhunter install
+
+# - name: install epel repository
+#   yum:
+#     name: epel-release
+
+- name: install rkhunter packages
+  yum:
+    name:
+      - rkhunter
+      - unhide
+      - file
+
+- name: set rkhunter config
+  lineinfile:
+    path: /etc/rkhunter.conf
+    regexp: '^{{ item }}'
+    line: '#{{ item }}'
+    backup: yes
+  loop:
+    - SCRIPTWHITELIST=/sbin/ifup
+    - SCRIPTWHITELIST=/sbin/ifdown
+
+- name: set rkhunter exclude check kernel modules directory '/lib/modules'
+  lineinfile:
+    path: /etc/rkhunter.conf
+    regexp: '^(DISABLE_TESTS=suspscan hidden_ports deleted_files packet_cap_apps apps ipc_shared_mem)$'
+    line: '\1 avail_modules'
+    backrefs: yes
+    backup: yes
+
+- name: "set rkhunter arrow ssh root user '{{ 'yes' if sec_sshd_permit_root_login else 'no' }}'"
+  lineinfile:
+    path: /etc/rkhunter.conf
+    regexp: "^ALLOW_SSH_ROOT_USER={{ 'no' if sec_sshd_permit_root_login else 'unset' }}"
+    line: "ALLOW_SSH_ROOT_USER={{ 'unset' if sec_sshd_permit_root_login else 'no' }}"
+    backup: yes
+
+- name: init rkhunter database
+  shell: rkhunter --update; rkhunter --propupd
+  args:
+    creates: /var/lib/rkhunter/db/rkhunter.dat

@@ -1,0 +1,79 @@
+---
+# firewalld install
+
+- name: install firewalld package
+  yum:
+    name: firewalld
+
+- name: start firewalld service
+  service:
+    name: firewalld
+    state: started
+    enabled: yes
+
+- name: check firewalld direct rules
+  command: iptables -L INPUT_direct
+  register: firewalld_rules
+  failed_when: no
+  check_mode: no
+  changed_when: firewalld_rules.rc != 0
+
+- name: set firewalld direct rules
+  command: "firewall-cmd --permanent --direct --add-rule ipv4 filter INPUT 0 {{ item }}"
+  with_items:
+    - '-p tcp --tcp-flags ALL NONE -j DROP'
+    - '-p tcp ! --syn -m state --state NEW -j DROP'
+    - '-p tcp --tcp-flags ALL ALL -j DROP'
+  notify: restart firewalld service
+  when: firewalld_rules is changed
+
+- name: unset firewall default services
+  firewalld:
+    service: "{{ item }}"
+    permanent: true
+    state: disabled
+  loop:
+    - ssh
+    - dhcpv6-client
+  notify: restart firewalld service
+
+- name: set firewalld open port
+  firewalld:
+    port: '{{ sec_sshd_listen_port }}/tcp'
+    permanent: true
+    state: enabled
+  notify: restart firewalld service
+
+# fail2ban install
+
+- block:
+  #  - name: install epel repository
+  #    yum:
+  #      name: epel-release
+
+  - name: install fail2ban packages
+    yum:
+      name:
+        - fail2ban
+        - fail2ban-systemd
+
+  - name: start fail2ban service
+    service:
+      name: fail2ban
+      state: started
+      enabled: yes
+
+        #  - name: copy fail2ban jail conf
+        #    template:
+        #      src: jail.local.j2
+        #      dest: /etc/fail2ban/jail.local
+        #      mode: 0644
+        #    notify: restart fail2ban service
+
+        #  - name: change blocktype REJECT -> DROP
+        #    replace:
+        #      path: /etc/fail2ban/action.d/iptables-common.conf
+        #      regexp: '^blocktype.*$'
+        #      replace: 'blocktype = DROP'
+
+  when: sec_fail2ban_enabled

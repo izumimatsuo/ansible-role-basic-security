@@ -1,0 +1,21 @@
+---
+# handlers file for ansible-role-basic-security
+
+- name: restart sshd service
+  service:
+    name: sshd
+    state: restarted
+
+- name: restart firewalld service
+  service:
+    name: firewalld
+    state: restarted
+
+- name: restart fail2ban service
+  service:
+    name: fail2ban
+    state: restarted
+
+- name: reboot server
+  reboot:
+  when: test_skip is undefined

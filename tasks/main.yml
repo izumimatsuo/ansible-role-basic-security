@@ -1,0 +1,120 @@
+---
+# tasks file for ansible-role-basic-security
+
+# ----- epel repository -----
+
+- name: install epel repository
+  yum:
+    name: epel-release
+
+# ----- stop & disabled unnecessary services -----
+
+- name: populate service facts
+  service_facts:
+
+- name: stop unnecessary services
+  service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  when: item in ansible_facts.services or item + '.service' in ansible_facts.services
+  with_items: "{{ sec_unnecessary_services }}"
+
+# ----- kernel parameters -----
+
+- name: set kernel parameters
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+  with_items:
+    - { name: net.ipv6.conf.all.disable_ipv6, value: 1 }
+    - { name: net.ipv6.conf.default.disable_ipv6, value: 1 }
+    - { name: net.ipv4.icmp_echo_ignore_broadcasts, value: 1 }
+    - { name: net.ipv4.ip_forward, value: 0 }
+    - { name: net.ipv4.conf.all.rp_filter, value: 1 }
+    - { name: net.ipv4.conf.default.rp_filter, value: 1 }
+    - { name: net.ipv4.conf.all.accept_redirects, value: 0 }
+    - { name: net.ipv4.conf.default.accept_redirects, value: 0 }
+    - { name: net.ipv4.conf.all.log_martians, value: 1 }
+    - { name: kernel.randomize_va_space, value: 2 }
+  notify: reboot server
+
+# ----- sshd -----
+
+- name: install sshd package
+  yum:
+    name:
+      - openssh-server
+
+- name: start sshd service
+  service:
+    name: sshd
+    state: started
+    enabled: yes
+
+- name: "set sshd listen port '{{ sec_sshd_listen_port }}'"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^Port '
+    insertafter: '^#Port '
+    line: "Port {{ sec_sshd_listen_port }}"
+    backup: yes
+    validate: 'sshd -tf %s'
+  notify: restart sshd service
+
+- name: "set sshd permit root login '{{ 'yes' if sec_sshd_permit_root_login else 'no' }}'"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PermitRootLogin '
+    insertafter: '^#PermitRootLogin '
+    line: "PermitRootLogin {{ 'yes' if sec_sshd_permit_root_login else 'no' }}"
+    backup: yes
+    validate: 'sshd -tf %s'
+  notify: restart sshd service
+
+- name: "set sshd password authentication '{{ 'yes' if sec_sshd_password_authentication else 'no'}}'"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PasswordAuthentication '
+    insertafter: '^#PasswordAuthentication '
+    line: "PasswordAuthentication {{ 'yes' if sec_sshd_password_authentication else 'no' }}"
+    backup: yes
+    validate: 'sshd -tf %s'
+  notify: restart sshd service
+
+- name: set sshd other configration 'no'
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^{{ item }} '
+    insertafter: '^#{{ item }} '
+    line: "{{ item }} no"
+    backup: yes
+    validate: 'sshd -tf %s'
+  loop:
+    - PermitEmptyPasswords
+    - ChallengeResponseAuthentication
+    - KerberosAuthentication
+    - GSSAPIAuthentication
+    - X11Forwarding
+  notify: restart sshd service
+
+# ----- firewalld and fail2ban -----
+
+- include_tasks: firewalld_and_fail2ban.yml
+  when: sec_firewalld_enabled
+
+# ----- clamav -----
+
+- include_tasks: clamav.yml
+  when: sec_clamav_enabled
+
+# ----- rkhunter -----
+
+- include_tasks: rkhunter.yml
+  when: sec_rkhunter_enabled
+
+# ----- aide -----
+
+- include_tasks: aide.yml
+  when: sec_aide_enabled
