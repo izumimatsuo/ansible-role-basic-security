@@ -1,4 +1,4 @@
-# ansible-role-basic-security
+# ansible-role-basic-security [![Build Status](https://app.travis-ci.com/izumimatsuo/ansible-role-basic-security.svg?branch=main)](https://app.travis-ci.com/izumimatsuo/ansible-role-basic-security)
 
 CentOS 7 のセキュリティ設定をおこなう ansible role です。
 
