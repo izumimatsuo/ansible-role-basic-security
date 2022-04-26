@@ -4,11 +4,11 @@ CentOS 7 のセキュリティ設定をおこなう ansible role です。
 
 - 不要なサービスの停止と無効化
 - カーネルパラメータの設定
- - ipv6 の無効化
- - Smurf 攻撃対策
- - IP Spoofing 攻撃対策
- - MITM 攻撃対策
- - バッファオーバーフロー対策
+  - ipv6 の無効化
+  - Smurf 攻撃対策
+  - IP Spoofing 攻撃対策
+  - MITM 攻撃対策
+  - バッファオーバーフロー対策
 - sshの設定
 - aideの適用
 - clamavの適用
